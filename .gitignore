@@ -87,3 +87,5 @@ logs
 *.swp
 *.swo
 *~
+
+lib/firebase-config.ts
