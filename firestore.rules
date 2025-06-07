@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Simple role checks
+    function isHelper() {
+      let user = getUser();
+      return user != null && user.role == 'helper';
+    }
+
+    function isManager() {
+      let user = getUser();
+      return user != null && user.role == 'manager';
+    }
+
+    // Check if user is assigned to task
+    // (collapse the JS map/let into a single expression)
+    function isAssignedToTask(taskData) {
+      // if assignedTo is a single UID:
+      return taskData.assignedTo == request.auth.uid;
+      // OR, if assignedTo is an object keyed by UID:
+      // return request.auth.uid in taskData.assignedTo;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Households collection
+    match /households/{householdId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isManager();
+    }
+    
+    // Tasks collection
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSignedIn() && isManager();
+      // Any signed-in user can update tasks
+      allow update: if isSignedIn();
+    }
+  }
+}

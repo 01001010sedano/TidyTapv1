@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 195 40% 96%;
+  --foreground: 0 0% 20%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 20%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 20%;
+
+  --primary: 246 100% 69%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 162 29% 78%;
+  --secondary-foreground: 0 0% 20%;
+
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+
+  --accent: 246 100% 69%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 63%;
+  --destructive-foreground: 0 0% 100%;
+
+  --warning: 36 100% 57%;
+  --warning-foreground: 0 0% 20%;
+
+  --success: 120 43% 57%;
+  --success-foreground: 0 0% 20%;
+
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 246 100% 69%;
+
+  --radius: 0.5rem;
+
+  --fc-border-color: #e5e7eb; /* Tailwind gray-200 */
+  --fc-bg-color: #f8fafc;     /* Tailwind gray-50 */
+  --fc-page-bg-color: #f8fafc;
+  --fc-neutral-bg-color: #f1f5f9; /* Tailwind gray-100 */
+  --fc-button-bg-color: #6366f1;  /* Tailwind indigo-500 */
+  --fc-button-border-color: #6366f1;
+  --fc-button-text-color: #fff;
+  --fc-button-hover-bg-color: #4f46e5; /* Tailwind indigo-600 */
+  --fc-button-hover-border-color: #4f46e5;
+  --fc-today-bg-color: #c7d2fe; /* Tailwind indigo-200 */
+  --fc-event-bg-color: #6366f1;
+  --fc-event-border-color: #6366f1;
+  --fc-event-text-color: #fff;
+  --fc-list-event-hover-bg-color: #e0e7ff; /* Tailwind indigo-100 */
+}
+
+.dark {
+  --background: 220 27% 13%; /* #181F2A */
+  --foreground: 0 0% 98%;
+
+  --card: 220 25% 18%; /* #232B3B */
+  --card-foreground: 0 0% 98%;
+
+  --popover: 220 25% 18%;
+  --popover-foreground: 0 0% 98%;
+
+  --primary: 246 100% 69%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 162 29% 20%; /* #B2D8CE darkened */
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 220 25% 18%;
+  --muted-foreground: 0 0% 64%;
+
+  --accent: 246 100% 69%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 63%;
+  --destructive-foreground: 0 0% 98%;
+
+  --warning: 36 100% 57%;
+  --warning-foreground: 0 0% 20%;
+
+  --success: 120 43% 57%;
+  --success-foreground: 0 0% 20%;
+
+  --border: 220 25% 25%;
+  --input: 220 25% 25%;
+  --ring: 246 100% 69%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes suck {
+  0% { transform: scale(1) translateX(0); opacity: 1; }
+  100% { transform: scale(0) translateX(80px); opacity: 0; }
+}
+.animate-suck {
+  animation: suck 10s ease-out forwards;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-5deg); }
+}
+.animate-wiggle {
+  animation: wiggle 10s ease-in-out infinite;
+}
+
+@keyframes vacuum-move {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(320px); }
+}
+.vacuum-move {
+  animation: vacuum-move 10s linear forwards;
+}
+
+.fc {
+  background: var(--fc-bg-color);
+  border-radius: 0.75rem;
+  font-family: inherit;
+}
+
+.fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b; /* Tailwind gray-800 */
+}
+
+.fc-button, .fc-button-primary {
+  background: var(--fc-button-bg-color);
+  border: 1px solid var(--fc-button-border-color);
+  color: var(--fc-button-text-color);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.fc-button:hover, .fc-button-primary:hover {
+  background: var(--fc-button-hover-bg-color);
+  border-color: var(--fc-button-hover-border-color);
+}
+
+.fc-day-today {
+  background: var(--fc-today-bg-color) !important;
+}
+
+.fc-event {
+  background: var(--fc-event-bg-color) !important;
+  border: 1px solid var(--fc-event-border-color) !important;
+  color: var(--fc-event-text-color) !important;
+  border-radius: 0.375rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.fc-list-event:hover {
+  background: var(--fc-list-event-hover-bg-color) !important;
+}
+
+/* --- TidyTap FullCalendar Button Customization (Updated) --- */
+.fc .fc-button, .fc .fc-button-primary {
+  background: #7c3aed; /* TidyTap purple (Tailwind violet-600) */
+  border: 1px solid #7c3aed;
+  color: #fff;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  box-shadow: none;
+  transition: background 0.2s, border 0.2s;
+}
+
+.fc .fc-button:hover, .fc .fc-button-primary:hover,
+.fc .fc-button:focus, .fc .fc-button-primary:focus {
+  background: #6d28d9; /* Slightly darker purple for hover/focus */
+  border-color: #6d28d9;
+  color: #fff;
+}
+
+.fc .fc-button.fc-button-active, .fc .fc-button-primary.fc-button-active, .fc .fc-button.fc-button-active:not(:disabled), .fc .fc-button-primary.fc-button-active:not(:disabled) {
+  background: #4ade80 !important; /* Mint green for active/selected */
+  border-color: #4ade80 !important;
+  color: #1e293b !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+.fc .fc-button:disabled, .fc .fc-button-primary:disabled {
+  background: #e5e7eb;
+  color: #a1a1aa;
+  border-color: #e5e7eb;
+}
+
+.fc .fc-toolbar .fc-button-group .fc-button {
+  margin-right: 0.25rem;
+}
