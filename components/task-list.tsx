@@ -14,6 +14,9 @@ import { AlertCircle, Clock, Edit, MoreHorizontal, Plus, Trash2 } from "lucide-r
 import { useToast } from "@/hooks/use-toast"
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { onSnapshot } from "firebase/firestore"
+// @ts-expect-error: no types for canvas-confetti
+import confetti from 'canvas-confetti'
 
 type Task = {
   id: string
@@ -27,6 +30,7 @@ type Task = {
     id: string
     name: string
   }>
+  category?: string
 }
 
 type Household = {
@@ -51,65 +55,65 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
   const [vacuumX, setVacuumX] = useState(0)
   const taskRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  const shrimpyQuotes = [
+    "Great job! ✨ Another task gone 🧼",
+    "You're on fire! 🔥🦐",
+    "TidyTap approved ✅",
+    "Shrimpy says: Clean vibes only 🌟",
+    "Boom! Task zapped 💥"
+  ];
+
   // Use external filter if provided
   const activeFilter = externalFilter ?? filter;
 
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
     const fetchTasks = async () => {
-      if (!user?.id) return
-
+      if (!user?.id) return;
       try {
-        const tasksRef = collection(db, "tasks")
+        const tasksRef = collection(db, "tasks");
         let q;
-
         if (user.role === "helper") {
-          // For helpers, first get all their households
-          const response = await fetch(`/api/user-households?userId=${user.id}`)
-          const data = await response.json()
-          
+          const response = await fetch(`/api/user-households?userId=${user.id}`);
+          const data = await response.json();
           if (data.success && data.data.households.length > 0) {
-            // Get tasks from all households the helper is part of
-            const householdIds = data.data.households.map((h: Household) => h.id)
-            q = query(tasksRef, where("householdId", "in", householdIds))
+            const householdIds = data.data.households.map((h: Household) => h.id);
+            q = query(tasksRef, where("householdId", "in", householdIds));
           } else {
-            setTasks([])
-            return
+            setTasks([]);
+            return;
           }
         } else {
-          // For managers, just get tasks from their household
-          if (!user.householdId) return
-          q = query(tasksRef, where("householdId", "==", user.householdId))
+          if (!user.householdId) return;
+          q = query(tasksRef, where("householdId", "==", user.householdId));
         }
-
-        const querySnapshot = await getDocs(q)
-        
-        let tasksData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Task[]
-
-        // Filter by householdId if provided
-        if (householdId) {
-          tasksData = tasksData.filter(task => task.householdId === householdId)
-        }
-        // Filter by helperId if provided
-        if (helperId) {
-          tasksData = tasksData.filter(task => task.assignedTo.some(a => a.id === helperId))
-        }
-
-        setTasks(tasksData)
+        unsubscribe = onSnapshot(q, (querySnapshot) => {
+          let tasksData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Task[];
+          if (householdId) {
+            tasksData = tasksData.filter(task => task.householdId === householdId);
+          }
+          if (helperId) {
+            tasksData = tasksData.filter(task => task.assignedTo.some(a => a.id === helperId));
+          }
+          setTasks(tasksData);
+        });
       } catch (error) {
-        console.error("Error fetching tasks:", error)
+        console.error("Error fetching tasks:", error);
         toast({
           title: "Error",
           description: "Failed to load tasks. Please try again.",
           variant: "destructive",
-        })
+        });
       }
-    }
-
-    fetchTasks()
-  }, [user?.id, user?.householdId, user?.role, toast, helperId, householdId])
+    };
+    fetchTasks();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.id, user?.householdId, user?.role, toast, helperId, householdId]);
 
   useEffect(() => {
     if (vacuumingTaskId && taskRefs.current[vacuumingTaskId]) {
@@ -187,12 +191,21 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
       setTasks(tasks => tasks.map(task =>
         task.id === taskId ? { ...task, ...updateData } : task
       ))
-      toast({
-        title: checked ? "Task completed" : "Task marked as pending",
-        description: checked
-          ? "The task has been marked as completed."
-          : "The task has been marked as pending.",
-      })
+      if (checked) {
+        toast({
+          title: shrimpyQuotes[Math.floor(Math.random() * shrimpyQuotes.length)],
+          description: "Shrimpy is proud of you!",
+          // You can style this further if you want
+        });
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 50, spread: 70 });
+        }
+      } else {
+        toast({
+          title: "Task marked as pending",
+          description: "You can do it! 🦐",
+        });
+      }
     } catch (error) {
       console.error("Error updating task status:", error)
       toast({
@@ -205,13 +218,23 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
 
   const filteredTasks = tasks.filter((task) => {
     if (activeFilter === "all") return true
-    if (activeFilter === "completed") return task.status === "completed"
-    if (activeFilter === "pending") return task.status === "pending"
-    if (activeFilter === "in-progress") return task.status === "in-progress"
-    if (activeFilter === "assigned-to-me") return task.assignedTo.some(assignee => assignee.id === user?.id)
+    // Category filters
+    if (["chore", "kitchen", "dog-care", "errand", "personal"].includes(activeFilter)) {
+      return (task.category || "uncategorized").toLowerCase() === activeFilter
+    }
+    if (activeFilter === "uncategorized") {
+      return !task.category || task.category.trim() === ""
+    }
+    // Priority filters
     if (activeFilter === "high-priority") return task.priority === "high"
     if (activeFilter === "medium-priority") return task.priority === "medium"
     if (activeFilter === "low-priority") return task.priority === "low"
+    // Status filters
+    if (activeFilter === "completed") return task.status === "completed"
+    if (activeFilter === "pending") return task.status === "pending"
+    if (activeFilter === "in-progress") return task.status === "in-progress"
+    // Assignment filter
+    if (activeFilter === "assigned-to-me") return task.assignedTo.some(assignee => assignee.id === user?.id)
     return true
   }).sort((a, b) => {
     // Sort by time when showing all tasks
@@ -252,18 +275,34 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         {externalFilter === undefined && (
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Filter tasks" />
           </SelectTrigger>
           <SelectContent>
+            {/* All */}
+            <div className="px-2 py-1 text-xs text-muted-foreground">All</div>
             <SelectItem value="all">All Tasks</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="assigned-to-me">Assigned to Me</SelectItem>
+            {/* Category */}
+            <div className="px-2 py-1 text-xs text-muted-foreground">Category</div>
+            <SelectItem value="chore">Chore</SelectItem>
+            <SelectItem value="kitchen">Kitchen</SelectItem>
+            <SelectItem value="dog-care">Dog-care</SelectItem>
+            <SelectItem value="errand">Errand</SelectItem>
+            <SelectItem value="personal">Personal</SelectItem>
+            <SelectItem value="uncategorized">Uncategorized</SelectItem>
+            {/* Priority */}
+            <div className="px-2 py-1 text-xs text-muted-foreground">Priority</div>
             <SelectItem value="high-priority">High Priority</SelectItem>
             <SelectItem value="medium-priority">Medium Priority</SelectItem>
             <SelectItem value="low-priority">Low Priority</SelectItem>
+            {/* Status */}
+            <div className="px-2 py-1 text-xs text-muted-foreground">Status</div>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            {/* Assignment */}
+            <div className="px-2 py-1 text-xs text-muted-foreground">Assignment</div>
+            <SelectItem value="assigned-to-me">Assigned to Me</SelectItem>
           </SelectContent>
         </Select>
         )}

@@ -49,7 +49,6 @@ export default function TasksPage() {
 
         {user?.role === "manager" && (
           <>
-            <TaskSummary />
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mt-6 mb-2">
               <div className="w-full sm:w-[240px]">
                 <Select value={selectedHelper} onValueChange={setSelectedHelper}>

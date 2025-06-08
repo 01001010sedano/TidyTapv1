@@ -177,63 +177,67 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop layout */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r">
-          <div className="flex flex-col gap-6 px-4 py-6">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <FaBroom className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold">TidyTap</span>
-            </Link>
-            <nav className="flex flex-col gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors"
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r h-full" style={{height: '100vh', overflowY: 'auto'}}>
+          <div className="flex flex-col h-full">
+            <div className="flex-grow overflow-y-auto">
+              <div className="flex flex-col gap-6 px-4 py-6">
+                <Link href="/dashboard" className="flex items-center gap-2">
+                  <FaBroom className="h-6 w-6 text-primary" />
+                  <span className="text-xl font-bold">TidyTap</span>
                 </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="mt-auto border-t p-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>{userInitials}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-start text-sm">
-                    <span>{user.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {user.role === "manager" ? "Home Manager" : "Helper"}
-                    </span>
-                  </div>
-                  <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <nav className="flex flex-col gap-1">
+                  {navigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+            </div>
+            <div className="shrink-0 border-t p-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{userInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start text-sm">
+                      <span>{user.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {user.role === "manager" ? "Home Manager" : "Helper"}
+                      </span>
+                    </div>
+                    <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </aside>
 

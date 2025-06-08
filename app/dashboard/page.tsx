@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { TaskList } from "@/components/task-list"
 import { TaskSummary } from "@/components/task-summary"
+import { ShrimpyChat } from "@/components/ShrimpyChat"
 
 export default function DashboardPage() {
   return (
@@ -20,6 +21,7 @@ export default function DashboardPage() {
           <TaskList />
         </div>
       </div>
+      <ShrimpyChat />
     </DashboardLayout>
   )
 }
