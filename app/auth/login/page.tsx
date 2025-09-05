@@ -208,9 +208,9 @@ export default function LoginPage() {
     try {
       setIsSubmitting(true)
       if (provider === "google") {
-        await loginWithGoogle()
+        await loginWithGoogle(role)
       } else {
-        await loginWithFacebook()
+        await loginWithFacebook(role)
       }
       toast({
         title: "Login successful",

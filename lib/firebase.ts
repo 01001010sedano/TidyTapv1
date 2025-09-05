@@ -2,6 +2,7 @@ import { initializeApp, getApps } from "firebase/app"
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 import { getAnalytics } from "firebase/analytics"
+import { getStorage } from "firebase/storage"
 
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -32,6 +33,7 @@ if (typeof window !== "undefined") {
 }
 
 const db = getFirestore(firebaseApp)
+const storage = getStorage(firebaseApp)
 let analytics
 
 // Only initialize analytics on the client side
@@ -43,4 +45,4 @@ if (typeof window !== "undefined") {
   }
 }
 
-export { firebaseApp, auth, db, analytics }
+export { firebaseApp, auth, db, analytics, storage }

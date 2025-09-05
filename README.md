@@ -195,7 +195,7 @@ The app can be deployed to any platform that supports Next.js:
 
 ## 👥 Authors
 
-- **01001010sedano** - Lead Developer & Maintainer
+- **Jane Sedano** - Lead Developer & Maintainer
 
 ## 🙏 Acknowledgments
 

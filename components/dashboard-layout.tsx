@@ -19,6 +19,8 @@ import { Bell, Calendar, ChevronDown, ClipboardList, Home, Loader2, LogOut, Menu
 import { FaBroom } from "react-icons/fa"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import Link from "next/link"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { HelpCircle } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -59,6 +61,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Tasks", href: "/dashboard/tasks", icon: ClipboardList },
+    { name: "Templates", href: "/dashboard/templates", icon: FaBroom },
     { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     { name: "Task Log", href: "/dashboard/log", icon: Bell },
   ]
@@ -71,8 +74,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         .toUpperCase()
     : "U"
 
+  const howToInstructions = {
+    manager: [
+      "Invite helpers to your household using the unique code found in your settings.",
+      "Create tasks by clicking the '+ Create Task' button on the dashboard or tasks page.",
+      "When creating a task, use the 'AI Help' button to get suggestions for task details.",
+      "For any task, click the three dots (⋯) menu and select 'Help' to get AI-powered, step-by-step instructions for completing the task.",
+      "Assign tasks to helpers and set due dates or recurrence as needed.",
+      "Track task progress and completion rates in the dashboard.",
+      "Use the Task Log to review completed and pending tasks for accountability.",
+      "Manage helpers and household settings from the settings page."
+    ],
+    helper: [
+      "Join a household using the invite code provided by your manager.",
+      "View your assigned tasks on the dashboard or tasks page.",
+      "For any task, click the three dots (⋯) menu and select 'Help' to get AI-powered, step-by-step instructions for completing the task.",
+      "Click on a task to see details and use the 'Shrimpy's Tips' AI helper for additional guidance.",
+      "Mark tasks as 'In Progress' or 'Completed' as you work on them.",
+      "Track your progress and see upcoming or overdue tasks in the dashboard.",
+      "Communicate with your manager if you need clarification or help with tasks."
+    ]
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background">
       {/* Mobile header */}
       <header className="sticky top-0 z-40 border-b bg-card lg:hidden">
         <div className="container flex h-16 items-center justify-between px-4">
@@ -101,6 +126,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       {item.name}
                     </Link>
                   ))}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors mt-2">
+                        <HelpCircle className="h-5 w-5" />
+                        How to?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>How to use TidyTap ({user.role === "manager" ? "Manager" : "Helper"})</DialogTitle>
+                        <DialogDescription>
+                          Step-by-step guide for using TidyTap:
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-2">
+                        <ol className="text-left" style={{ listStyle: 'decimal', paddingLeft: '1.5rem' }}>
+                          {howToInstructions[user.role].map((item, idx) => (
+                            <li
+                              key={idx}
+                              className="mb-5 last:mb-0 bg-muted/60 rounded-lg px-4 py-3 text-base shadow-sm"
+                              style={{
+                                background: 'rgba(240, 240, 255, 0.7)',
+                                borderRadius: '0.75rem',
+                                fontSize: '1.08rem',
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {item}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -152,7 +211,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings/profile">
+                  <Link href="/dashboard/settings?tab=profile">
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
@@ -175,9 +234,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </header>
 
       {/* Desktop layout */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r h-full" style={{height: '100vh', overflowY: 'auto'}}>
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r">
           <div className="flex flex-col h-full">
             <div className="flex-grow overflow-y-auto">
               <div className="flex flex-col gap-6 px-4 py-6">
@@ -196,6 +255,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       {item.name}
                     </Link>
                   ))}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground transition-colors mt-2">
+                        <HelpCircle className="h-5 w-5" />
+                        How to?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>How to use TidyTap ({user.role === "manager" ? "Manager" : "Helper"})</DialogTitle>
+                        <DialogDescription>
+                          Step-by-step guide for using TidyTap:
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-2">
+                        <ol className="text-left" style={{ listStyle: 'decimal', paddingLeft: '1.5rem' }}>
+                          {howToInstructions[user.role].map((item, idx) => (
+                            <li
+                              key={idx}
+                              className="mb-5 last:mb-0 bg-muted/60 rounded-lg px-4 py-3 text-base shadow-sm"
+                              style={{
+                                background: 'rgba(240, 240, 255, 0.7)',
+                                borderRadius: '0.75rem',
+                                fontSize: '1.08rem',
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {item}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </nav>
               </div>
             </div>
@@ -219,7 +312,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings/profile">
+                    <Link href="/dashboard/settings?tab=profile">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
@@ -242,7 +335,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   )

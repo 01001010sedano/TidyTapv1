@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Loader2, X } from "lucide-react"
+import { ArrowLeft, Loader2, X, Zap } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -40,7 +40,7 @@ export default function CreateTaskPage() {
   const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [repeatFrequency, setRepeatFrequency] = useState("")
-  const [dayOfWeek, setDayOfWeek] = useState("")
+  const [dayOfWeek, setDayOfWeek] = useState<string[]>([])
   const [dayOfMonth, setDayOfMonth] = useState<number | "">("")
 
   const router = useRouter()
@@ -130,7 +130,7 @@ export default function CreateTaskPage() {
       if (parsed.repeat) {
         if (parsed.repeat.frequency === "daily") {
           setRepeatFrequency("daily");
-          setDayOfWeek("");
+          setDayOfWeek([]);
           setDayOfMonth("");
         } else if (parsed.repeat.frequency === "weekly" && parsed.repeat.dayOfWeek) {
           setRepeatFrequency("weekly");
@@ -139,7 +139,7 @@ export default function CreateTaskPage() {
         } else if (parsed.repeat.frequency === "monthly" && parsed.repeat.dayOfMonth) {
           setRepeatFrequency("monthly");
           setDayOfMonth(parsed.repeat.dayOfMonth);
-          setDayOfWeek("");
+          setDayOfWeek([]);
         }
       }
       toast({
@@ -174,7 +174,7 @@ export default function CreateTaskPage() {
       let repeat: any = null;
       if (repeatFrequency === "daily") {
         repeat = { frequency: "daily" };
-      } else if (repeatFrequency === "weekly" && dayOfWeek) {
+      } else if (repeatFrequency === "weekly" && dayOfWeek.length > 0) {
         repeat = { frequency: "weekly", dayOfWeek };
       } else if (repeatFrequency === "monthly" && dayOfMonth) {
         repeat = { frequency: "monthly", dayOfMonth };
@@ -232,14 +232,22 @@ export default function CreateTaskPage() {
   return (
     <DashboardLayout>
       <div className="container p-4 md:p-6">
-        <Button
-          variant="ghost"
-          className="mb-4"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/dashboard/templates')}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Use Template
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
@@ -400,20 +408,24 @@ export default function CreateTaskPage() {
                   <option value="monthly">Monthly</option>
                 </select>
                 {repeatFrequency === 'weekly' && (
-                  <select
-                    value={dayOfWeek}
-                    onChange={(e) => setDayOfWeek(e.target.value)}
-                    className="w-full mt-2 border p-2 rounded-md"
-                  >
-                    <option value="">Select day</option>
-                    <option>Monday</option>
-                    <option>Tuesday</option>
-                    <option>Wednesday</option>
-                    <option>Thursday</option>
-                    <option>Friday</option>
-                    <option>Saturday</option>
-                    <option>Sunday</option>
-                  </select>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                      <label key={day} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={dayOfWeek.includes(day)}
+                          onChange={() => {
+                            setDayOfWeek((prev) =>
+                              prev.includes(day)
+                                ? prev.filter((d) => d !== day)
+                                : [...prev, day]
+                            )
+                          }}
+                        />
+                        {day.slice(0, 3)}
+                      </label>
+                    ))}
+                  </div>
                 )}
                 {repeatFrequency === 'monthly' && (
                   <input

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,14 +14,18 @@ import { useToast } from "@/hooks/use-toast"
 import { getDoc, doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
+import { storage } from "@/lib/firebase"
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab");
   const [householdCode, setHouseholdCode] = useState("")
   const [isCheckingCode, setIsCheckingCode] = useState(false)
   const [codeValid, setCodeValid] = useState<boolean | null>(null)
@@ -46,6 +50,9 @@ export default function SettingsPage() {
       email: string | null;
     };
   }>>([])
+  const [uploading, setUploading] = useState(false)
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || "")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createInitialDocuments = async () => {
     if (!user) return
@@ -322,6 +329,29 @@ export default function SettingsPage() {
     }
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.id) return
+    setUploading(true)
+    try {
+      const storageRef = ref(storage, `profile-pictures/${user.id}`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      setPhotoURL(url)
+      // Optionally update Firestore user doc here if you have one
+      // await updateDoc(doc(db, "users", user.id), { photoURL: url })
+      toast({ title: "Profile picture updated!" })
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to upload image.", variant: "destructive" })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const renderHouseholdContent = () => {
     const isHelper = user?.role === "helper"
 
@@ -583,7 +613,7 @@ export default function SettingsPage() {
           </Card>
         )}
 
-        <Tabs defaultValue="household" className="space-y-4">
+        <Tabs defaultValue={tabParam || "household"} className="space-y-4">
           <TabsList>
             <TabsTrigger value="household">Household</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -611,6 +641,29 @@ export default function SettingsPage() {
                 <CardDescription>Update your personal information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="relative">
+                    <img
+                      src={photoURL || "/placeholder-user.jpg"}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-primary"
+                      onClick={handleAvatarClick}
+                      style={{ cursor: uploading ? "not-allowed" : "pointer", opacity: uploading ? 0.5 : 1 }}
+                    />
+                    {uploading && <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                    disabled={uploading}
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={handleAvatarClick} disabled={uploading}>
+                    {uploading ? "Uploading..." : "Change Photo"}
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input id="name" defaultValue={user?.name || ""} />

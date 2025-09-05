@@ -52,8 +52,8 @@ type AuthContextType = {
     role: "manager" | "helper",
     householdCode?: string,
   ) => Promise<RegisterResult>
-  loginWithGoogle: () => Promise<void>
-  loginWithFacebook: () => Promise<void>
+  loginWithGoogle: (role: "manager" | "helper") => Promise<void>
+  loginWithFacebook: (role: "manager" | "helper") => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
 }
@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (role: "manager" | "helper") => {
     setLoading(true)
     try {
       const provider = new GoogleAuthProvider()
@@ -252,15 +252,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firebaseUser = result.user
 
       // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+      const userDocRef = doc(db, "users", firebaseUser.uid)
+      let userDoc = await getDoc(userDocRef)
 
       if (!userDoc.exists()) {
-        // First time Google sign-in, create user in Firestore
-        await setDoc(doc(db, "users", firebaseUser.uid), {
-          name: firebaseUser.displayName,
+        // First time Google sign-in
+        if (role === "manager") {
+          // For managers, create documents via API
+          const response = await fetch("/api/create-initial-documents", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName,
+              role,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (!data.success) {
+            // If API call fails, delete the auth account and throw error
+            await firebaseUser.delete()
+            throw new Error(data.error + (data.details ? `: ${data.details}` : ""))
+          }
+        } else {
+          // For helpers, just create the user document
+          await setDoc(doc(db, "users", firebaseUser.uid), {
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            role: "helper", // Explicitly set role
+            createdAt: serverTimestamp(),
+          })
+        }
+        // Re-fetch the user document to ensure we have the latest data
+        userDoc = await getDoc(userDocRef)
+      }
+
+      // Manually update the user state to avoid race conditions with onAuthStateChanged
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+        setUser({
+          id: firebaseUser.uid,
           email: firebaseUser.email,
-          role: "helper", // Default role
-          createdAt: serverTimestamp(),
+          name: firebaseUser.displayName,
+          role: userData.role,
+          householdId: userData.householdId,
         })
       }
     } catch (error) {
@@ -271,7 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const loginWithFacebook = async () => {
+  const loginWithFacebook = async (role: "manager" | "helper") => {
     setLoading(true)
     try {
       const provider = new FacebookAuthProvider()
@@ -279,15 +319,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firebaseUser = result.user
 
       // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+      const userDocRef = doc(db, "users", firebaseUser.uid)
+      let userDoc = await getDoc(userDocRef)
 
       if (!userDoc.exists()) {
-        // First time Facebook sign-in, create user in Firestore
-        await setDoc(doc(db, "users", firebaseUser.uid), {
-          name: firebaseUser.displayName,
+        // First time Facebook sign-in
+        if (role === "manager") {
+          // For managers, create documents via API
+          const response = await fetch("/api/create-initial-documents", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName,
+              role,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (!data.success) {
+            // If API call fails, delete the auth account and throw error
+            await firebaseUser.delete()
+            throw new Error(data.error + (data.details ? `: ${data.details}` : ""))
+          }
+        } else {
+          // For helpers, just create the user document
+          await setDoc(doc(db, "users", firebaseUser.uid), {
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            role: "helper", // Explicitly set role
+            createdAt: serverTimestamp(),
+          })
+        }
+        // Re-fetch the user document to ensure we have the latest data
+        userDoc = await getDoc(userDocRef)
+      }
+
+      // Manually update the user state to avoid race conditions with onAuthStateChanged
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+        setUser({
+          id: firebaseUser.uid,
           email: firebaseUser.email,
-          role: "helper", // Default role
-          createdAt: serverTimestamp(),
+          name: firebaseUser.displayName,
+          role: userData.role,
+          householdId: userData.householdId,
         })
       }
     } catch (error) {

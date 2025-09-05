@@ -89,3 +89,16 @@ logs
 *~
 
 lib/firebase-config.ts
+
+# Google Cloud SDK (large files)
+google-cloud-sdk/
+google-cloud-sdk-*.tar.gz
+*.tar.gz
+
+# Large binary files
+*.bin
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm

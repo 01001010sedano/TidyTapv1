@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    function isUnderSizeLimit() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Photos folder rules
+    match /photos/{userId}/{photoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+        && request.auth.uid == userId 
+        && isImage() 
+        && isUnderSizeLimit();
+    }
+
+    // Signatures folder rules
+    match /signatures/{userId}/{signatureId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+        && request.auth.uid == userId 
+        && isImage() 
+        && isUnderSizeLimit();
+    }
+
+    // Profile pictures folder rules
+    match /profile-pictures/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+        && request.auth.uid == userId
+        && isImage()
+        && isUnderSizeLimit();
+    }
+  }
+}

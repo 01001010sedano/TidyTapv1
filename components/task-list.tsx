@@ -15,8 +15,10 @@ import { useToast } from "@/hooks/use-toast"
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { onSnapshot } from "firebase/firestore"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 // @ts-expect-error: no types for canvas-confetti
 import confetti from 'canvas-confetti'
+import axios from 'axios';
 
 type Task = {
   id: string
@@ -31,6 +33,7 @@ type Task = {
     name: string
   }>
   category?: string
+  repeat?: any
 }
 
 type Household = {
@@ -47,6 +50,8 @@ type Household = {
 export function TaskList({ helperId, householdId, filter: externalFilter }: { helperId?: string; householdId?: string; filter?: string }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filter, setFilter] = useState("all")
+  const [aiHelp, setAiHelp] = useState<{ [taskId: string]: string }>({});
+  const [loadingHelp, setLoadingHelp] = useState<string | null>(null);
   const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
@@ -147,6 +152,42 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
       })
     }
   }
+
+  const handleAiHelp = async (task: Task) => {
+    setLoadingHelp(task.id);
+    try {
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are Shrimpy — a friendly household assistant shrimp. Your main purpose is to help users with household tasks. When given a task title and description, provide a concise, step-by-step guide on how to complete it. Use emojis like 🧽🍳🦐✨. Be helpful and direct.'
+            },
+            { role: 'user', content: `Task: ${task.title}\nDescription: ${task.description}` }
+          ]
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const helpText = response.data.choices[0].message.content;
+      setAiHelp(prev => ({ ...prev, [task.id]: helpText }));
+    } catch (error) {
+      console.error('Error getting AI help:', error);
+      toast({
+        title: "Error",
+        description: "Shrimpy is a bit tired and couldn't provide help. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHelp(null);
+    }
+  };
 
   const handleStatusChange = async (taskId: string, checked: boolean) => {
     if (!user?.id) {
@@ -270,6 +311,16 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
     }
   }
 
+  const formatRepeat = (repeat: any) => {
+    if (!repeat || !repeat.frequency) return null;
+    if (repeat.frequency === 'daily') return 'Repeats: Daily';
+    if (repeat.frequency === 'weekly' && Array.isArray(repeat.dayOfWeek) && repeat.dayOfWeek.length > 0)
+      return `Repeats: ${repeat.dayOfWeek.map((d: string) => d.slice(0, 3)).join(', ')}`;
+    if (repeat.frequency === 'monthly' && repeat.dayOfMonth)
+      return `Repeats: Every month on day ${repeat.dayOfMonth}`;
+    return null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -367,48 +418,78 @@ export function TaskList({ helperId, householdId, filter: externalFilter }: { he
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
                               <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">More</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {user?.role === "manager" && (
-                              <DropdownMenuItem onClick={() => handleEditTask(task.id)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
+                            {user?.role === 'manager' && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleEditTask(task.id)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Edit</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </>
                             )}
-                            {user?.role === "manager" && (
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            )}
+                             <DropdownMenuItem onClick={() => handleAiHelp(task)}>
+                               <AlertCircle className="mr-2 h-4 w-4" />
+                               <span>Help</span>
+                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{task.description}</p>
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="flex -space-x-2">
-                          {task.assignedTo.map((assignee) => (
-                            <Avatar key={assignee.id} className="h-6 w-6 border-2 border-background">
-                              <AvatarFallback className="text-xs">{getInitials(assignee.name)}</AvatarFallback>
-                            </Avatar>
-                          ))}
-                        </div>
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                    )}
+
+                    {loadingHelp === task.id && (
+                      <div className="text-sm text-muted-foreground mt-2">
+                        Shrimpy is thinking... 🦐
+                      </div>
+                    )}
+                    
+                    {aiHelp[task.id] && (
+                      <Collapsible className="mt-2 text-sm">
+                        <CollapsibleTrigger asChild>
+                          <button className="flex items-center gap-2 font-semibold">
+                            Shrimpy's Tips 🦐
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="p-3 bg-muted rounded-lg mt-2">
+                          <div className="whitespace-pre-wrap">{aiHelp[task.id]}</div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
+
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center gap-2">
+                        {task.assignedTo.map((assignee) => (
+                          <Avatar key={assignee.id} className="h-8 w-8">
+                            <AvatarFallback>{getInitials(assignee.name || "U")}</AvatarFallback>
+                          </Avatar>
+                        ))}
                         <span>
                           {task.assignedTo.map(a => a.name).join(", ")}
                         </span>
                       </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="mr-1 h-4 w-4" />
-                        Due by {formatDueTime(task.dueTime)}
+                      <div className="flex flex-col items-end text-sm text-muted-foreground">
+                        {/* Recurrence display */}
+                        {formatRepeat((task as any).repeat) && (
+                          <span className="mb-1">{formatRepeat((task as any).repeat)}</span>
+                        )}
+                        <div className="flex items-center">
+                          <Clock className="mr-1 h-4 w-4" />
+                          Due by {formatDueTime(task.dueTime)}
+                        </div>
                       </div>
                     </div>
                   </div>
